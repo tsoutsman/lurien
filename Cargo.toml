@@ -1,0 +1,10 @@
+[package]
+name = "lurien"
+version = "0.1.0"
+edition = "2018"
+description = "A tool to help manage config files on multiple devices"
+repository = "https://github.com/tsoutsman/lurien"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+clap = "2"
