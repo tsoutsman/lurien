@@ -1,3 +1,7 @@
+use lurien::app::App;
+
+use clap::Clap;
+
 fn main() {
-    println!("Hello, world!");
+    let opt = App::parse();
 }
