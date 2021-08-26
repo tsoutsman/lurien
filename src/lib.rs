@@ -9,6 +9,8 @@
 )]
 
 pub mod app;
+// Ignore the error module in code coverage.
+#[cfg(not(tarpaulin_include))]
 pub mod error;
 pub mod fs;
 pub mod populate;

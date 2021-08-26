@@ -5,6 +5,7 @@ pub enum Error {
     FileSystem(ignore::Error),
     IoError(std::io::Error),
     NoMatch,
+    ExpectedMarker,
 }
 
 impl std::fmt::Display for Error {
@@ -13,6 +14,7 @@ impl std::fmt::Display for Error {
             Error::FileSystem(_) => "file system error",
             Error::IoError(_) => "io error",
             Error::NoMatch => "no matches found in the given input",
+            Error::ExpectedMarker => "expected a marker but reached eof",
         };
 
         write!(f, "{}", result)

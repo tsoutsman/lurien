@@ -2,6 +2,7 @@ use crate::error::{Error, Result};
 
 use std::{
     convert::TryFrom,
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
 };
 
@@ -13,13 +14,17 @@ use grep::{
 use ignore::WalkBuilder;
 
 lazy_static::lazy_static! {
-    pub static ref MATCHER: RegexMatcher = RegexMatcher::new_line_matcher(r"\{\{(?P<start>#|/)\s*lurien\s+(?P<hostname>[A-Za-z0-9\-_]+)\s*\}\}").unwrap();
+    pub static ref MATCHER: RegexMatcher = RegexMatcher::new_line_matcher(
+        r"\{\{(?P<start>#|/)\s*lurien\s+(?P<hostname>[A-Za-z0-9\-_]+)\s*\}\}",
+    )
+    // Unwrap is safe as this regex is tested.
+    .unwrap();
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Marker {
     /// If the [`Marker`] is an opening marker (i.e. `{{#`) then this is true. Otherwise (i.e.
-    /// closing marker / `{{/`) it's set to false.
+    /// closing marker i.e. `{{/`) it's set to false.
     pub is_opening: bool,
     /// The line number of the marker when all the other markers are in the file.
     pub lnum: u64,
@@ -73,12 +78,12 @@ impl std::convert::TryFrom<&str> for Marker {
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct File {
+pub struct MarkedFile {
     pub path: PathBuf,
     pub markers: Vec<Marker>,
 }
 
-impl std::convert::From<PathBuf> for File {
+impl std::convert::From<PathBuf> for MarkedFile {
     fn from(path: PathBuf) -> Self {
         Self {
             path,
@@ -87,7 +92,9 @@ impl std::convert::From<PathBuf> for File {
     }
 }
 
-pub fn walk_dir<P: AsRef<Path>>(path: P) -> Result<Vec<File>> {
+/// Get all files containing markers, and the position of those markers, in a given directory.
+/// The function will search the directory recursively.
+pub fn markers<P: AsRef<Path>>(path: P) -> Result<Vec<MarkedFile>> {
     // `.hidden(false)` means **include** hidden files.
     let walker = WalkBuilder::new(path).hidden(false).build();
 
@@ -97,7 +104,7 @@ pub fn walk_dir<P: AsRef<Path>>(path: P) -> Result<Vec<File>> {
 
     for entry in walker {
         let entry = entry?;
-        let mut file = File::from(entry.into_path());
+        let mut file = MarkedFile::from(entry.into_path());
 
         // TODO this will not be necessary in Rust 2021 when closures can partially move structs.
         let path = file.path.clone();
@@ -105,6 +112,7 @@ pub fn walk_dir<P: AsRef<Path>>(path: P) -> Result<Vec<File>> {
         searcher.search_path(
             &*MATCHER,
             path,
+            // TODO this sink or lossy?
             grep::searcher::sinks::UTF8(|lnum, line| {
                 // Unwrap is safe as the line is guaranteed to contain a match.
                 file.markers
@@ -119,6 +127,37 @@ pub fn walk_dir<P: AsRef<Path>>(path: P) -> Result<Vec<File>> {
     Ok(file_matches)
 }
 
+pub fn remove_markers(files: Vec<MarkedFile>) -> Result<()> {
+    for marked_file in files {
+        let mut result = String::new();
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(marked_file.path)?;
+
+        let mut lines = BufReader::new(&file).lines().enumerate();
+        let mut lnum = 0;
+
+        for marker in marked_file.markers {
+            while lnum < marker.lnum {
+                let next = match lines.next() {
+                    Some((lnum, line)) => (lnum, line?),
+                    None => return Err(Error::ExpectedMarker),
+                };
+
+                lnum = next.0 as u64;
+                let line_content = next.1;
+
+                result.push_str(&line_content);
+            }
+        }
+
+        file.write_all(result.as_bytes())?;
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,11 +166,7 @@ mod tests {
         let mut result = String::new();
 
         result += "{{";
-        if is_opening {
-            result += "#";
-        } else {
-            result += "/"
-        }
+        result += if is_opening { "#" } else { "/" };
         result += whitespace;
         result += "lurien";
         result += " ";
@@ -172,7 +207,7 @@ mod tests {
     #[test]
     fn test_into_marker_err() {
         let tests = vec![
-            "{#lurien singlequotes}",
+            "{#lurien singlebraces}",
             "{{ #lurien thing}}",
             // ^ illegal
             "{{#lurien name with space}}",
