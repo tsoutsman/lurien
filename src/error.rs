@@ -6,6 +6,7 @@ pub enum Error {
     IoError(std::io::Error),
     NoMatch,
     ExpectedMarker,
+    SerdeError,
 }
 
 impl std::fmt::Display for Error {
@@ -15,6 +16,7 @@ impl std::fmt::Display for Error {
             Error::IoError(_) => "io error",
             Error::NoMatch => "no matches found in the given input",
             Error::ExpectedMarker => "expected a marker but reached eof",
+            Error::SerdeError => "error serialising or deserialising file",
         };
 
         write!(f, "{}", result)
@@ -30,6 +32,12 @@ impl std::convert::From<ignore::Error> for Error {
 impl std::convert::From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Error::IoError(e)
+    }
+}
+
+impl std::convert::From<Box<bincode::ErrorKind>> for Error {
+    fn from(_: Box<bincode::ErrorKind>) -> Self {
+        Error::SerdeError
     }
 }
 
