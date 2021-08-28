@@ -1,11 +1,14 @@
+mod apply;
 mod populate;
 mod save;
 mod watch;
 
+pub use apply::apply;
 pub use populate::populate;
 pub use save::save;
 pub use watch::watch;
 
+use apply::Apply;
 use clap::Clap;
 use populate::Populate;
 use save::Save;
@@ -19,6 +22,7 @@ use watch::Watch;
     rename_all = "kebab"
 )]
 pub enum App {
+    Apply(Apply),
     Populate(Populate),
     Save(Save),
     Watch(Watch),

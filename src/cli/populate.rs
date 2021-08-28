@@ -2,7 +2,7 @@ use crate::error::Result;
 
 use clap::Clap;
 
-/// Apply the markers from a `.lurien` file
+/// Place all markers specified in a `.lurien` file into their positions
 #[derive(Clap, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Populate {}
 

@@ -5,6 +5,7 @@ fn main() {
     let input = App::parse();
 
     let result = match input {
+        App::Apply(args) => apply(&args),
         App::Populate(args) => populate(&args),
         App::Save(args) => save(&args),
         App::Watch(args) => watch(&args),

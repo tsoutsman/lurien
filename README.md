@@ -28,7 +28,7 @@ font_family     Fira Code Nerd Font
 font_size       21.0
 {{/lurien desktop}}
 {{#lurien laptop}}
-font_size 14.0
+font_size       14.0
 {{/lurien laptop}}
 ```
 
@@ -55,7 +55,7 @@ font_family     Fira Code Nerd Font
 font_size       21.0
 {{/lurien desktop}}
 {{#lurien laptop}}
-font_size 14.0
+font_size       14.0
 {{/lurien laptop}}
 ```
 
