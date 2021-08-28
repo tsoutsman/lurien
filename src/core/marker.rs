@@ -1,17 +1,11 @@
 use crate::error::{Error, Result};
 
-use std::{
-    convert::TryFrom,
-    io::{BufRead, BufReader, Write},
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
 use grep::{
     matcher::{Captures, Matcher},
     regex::RegexMatcher,
-    searcher::Searcher,
 };
-use ignore::WalkBuilder;
 
 lazy_static::lazy_static! {
     pub static ref MATCHER: RegexMatcher = RegexMatcher::new_line_matcher(
@@ -21,6 +15,9 @@ lazy_static::lazy_static! {
     .unwrap();
 }
 
+/// Represents a singular marker in a file. For example, `{{#lurien foo}}`. The struct is _stupid_;
+/// it's just an intermediary step in creating a [`Snippet`](super::snippet::Snippet) and is not
+/// stored anywhere.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Marker {
     /// If the [`Marker`] is an opening marker (i.e. `{{#`) then this is true. Otherwise (i.e.
@@ -77,13 +74,14 @@ impl std::convert::TryFrom<&str> for Marker {
     }
 }
 
+/// Represents all the markers contained in a file.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct MarkedFile {
+pub struct FileMarkerData {
     pub path: PathBuf,
     pub markers: Vec<Marker>,
 }
 
-impl std::convert::From<PathBuf> for MarkedFile {
+impl std::convert::From<PathBuf> for FileMarkerData {
     fn from(path: PathBuf) -> Self {
         Self {
             path,
@@ -92,75 +90,10 @@ impl std::convert::From<PathBuf> for MarkedFile {
     }
 }
 
-/// Get all files containing markers, and the position of those markers, in a given directory.
-/// The function will search the directory recursively.
-pub fn markers<P: AsRef<Path>>(path: P) -> Result<Vec<MarkedFile>> {
-    // `.hidden(false)` means **include** hidden files.
-    let walker = WalkBuilder::new(path).hidden(false).build();
-
-    let mut searcher = Searcher::new();
-    // TODO support names with weird characters and maybe spaces?
-    let mut file_matches = Vec::new();
-
-    for entry in walker {
-        let entry = entry?;
-        let mut file = MarkedFile::from(entry.into_path());
-
-        // TODO this will not be necessary in Rust 2021 when closures can partially move structs.
-        let path = file.path.clone();
-
-        searcher.search_path(
-            &*MATCHER,
-            path,
-            // TODO this sink or lossy?
-            grep::searcher::sinks::UTF8(|lnum, line| {
-                // Unwrap is safe as the line is guaranteed to contain a match.
-                file.markers
-                    .push(Marker::try_from(line).unwrap().with_line_number(lnum));
-                Ok(true)
-            }),
-        )?;
-
-        file_matches.push(file);
-    }
-
-    Ok(file_matches)
-}
-
-pub fn remove_markers(files: Vec<MarkedFile>) -> Result<()> {
-    for marked_file in files {
-        let mut result = String::new();
-        let mut file = std::fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(marked_file.path)?;
-
-        let mut lines = BufReader::new(&file).lines().enumerate();
-        let mut lnum = 0;
-
-        for marker in marked_file.markers {
-            while lnum < marker.lnum {
-                let next = match lines.next() {
-                    Some((lnum, line)) => (lnum, line?),
-                    None => return Err(Error::ExpectedMarker),
-                };
-
-                lnum = next.0 as u64;
-                let line_content = next.1;
-
-                result.push_str(&line_content);
-            }
-        }
-
-        file.write_all(result.as_bytes())?;
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::convert::TryFrom;
 
     fn gen_marker_str(is_opening: bool, hostname: &str, whitespace: &str) -> String {
         let mut result = String::new();

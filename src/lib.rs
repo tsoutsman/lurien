@@ -7,13 +7,11 @@
     missing_copy_implementations,
     rustdoc::broken_intra_doc_links
 )]
+// TODO
+#![allow(dead_code)]
 
-pub mod app;
+pub mod cli;
+pub(crate) mod core;
 // Ignore the error module in code coverage.
-pub mod data;
 #[cfg(not(tarpaulin_include))]
 pub mod error;
-pub mod fs;
-pub mod populate;
-pub mod save;
-pub mod watch;

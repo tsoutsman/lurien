@@ -1,6 +1,5 @@
-use lurien::{app::App, populate::populate, save::save, watch::watch};
-
 use clap::Clap;
+use lurien::cli::*;
 
 fn main() {
     let input = App::parse();
