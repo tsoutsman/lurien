@@ -17,7 +17,7 @@ pub fn store_data(files: &[FileSnippetData], path: &Path) -> Result<()> {
 
 pub fn load_data(path: &Path) -> Result<Vec<FileSnippetData>> {
     let reader = BufReader::new(std::fs::File::open(path)?);
-    Ok(bincode::deserialize_from(reader).expect("issue: "))
+    Ok(bincode::deserialize_from(reader)?)
 }
 
 #[cfg(test)]
