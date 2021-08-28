@@ -4,5 +4,6 @@ mod fs;
 mod marker;
 mod serde;
 mod snippet;
+mod util;
 
 pub use fs::*;

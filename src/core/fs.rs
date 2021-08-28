@@ -1,6 +1,9 @@
 //! This module contains all the functions that can be called by the cli subcommands.
 
-use super::marker::{FileMarkerData, Marker, MATCHER};
+use super::{
+    marker::{FileMarkerData, Marker, MATCHER},
+    snippet::FileSnippetData,
+};
 use crate::error::{Error, Result};
 
 use std::{
@@ -36,7 +39,9 @@ pub fn markers<P: AsRef<Path>>(path: P) -> Result<Vec<FileMarkerData>> {
             grep::searcher::sinks::UTF8(|lnum, line| {
                 // Unwrap is safe as the line is guaranteed to contain a match.
                 file.markers
-                    .push(Marker::try_from(line).unwrap().with_line_number(lnum));
+                    // TODO gracefully exit instead of unwrapping.
+                    .try_push(Marker::try_from(line).unwrap().with_line_number(lnum))
+                    .unwrap();
                 Ok(true)
             }),
         )?;
@@ -77,4 +82,11 @@ pub fn remove_markers(files: Vec<FileMarkerData>) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn process_markers(marked_files: Vec<FileMarkerData>) -> Result<Vec<FileSnippetData>> {
+    for _file in marked_files {
+        //
+    }
+    todo!();
 }

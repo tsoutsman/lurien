@@ -64,7 +64,8 @@ dealership this winter, with an MSRP of $58,900."
                             .to_owned(),
                         hostname: "laptop".to_owned(),
                     },
-                ],
+                ]
+                .into(),
             },
             FileSnippetData {
                 path: "/temp/bar".into(),
@@ -290,7 +291,8 @@ dealership this winter, with an MSRP of $58,900."
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠿⠿⠿⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 "
                     .to_owned(),
-                }],
+                }]
+                .into(),
             },
         ];
         store_data(&data, &file_path).unwrap();

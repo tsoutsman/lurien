@@ -7,6 +7,7 @@ pub enum Error {
     NoMatch,
     ExpectedMarker,
     SerdeError,
+    NotSorted,
 }
 
 impl std::fmt::Display for Error {
@@ -17,6 +18,7 @@ impl std::fmt::Display for Error {
             Error::NoMatch => "no matches found in the given input",
             Error::ExpectedMarker => "expected a marker but reached eof",
             Error::SerdeError => "error serialising or deserialising file",
+            Error::NotSorted => "attempted to push an unsorted value onto a sorted vec",
         };
 
         write!(f, "{}", result)

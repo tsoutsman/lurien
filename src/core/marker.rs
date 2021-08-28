@@ -1,3 +1,4 @@
+use super::util::SortedVec;
 use crate::error::{Error, Result};
 
 use std::path::PathBuf;
@@ -20,11 +21,11 @@ lazy_static::lazy_static! {
 /// stored anywhere.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Marker {
+    /// The line number of the marker when all the other markers are in the file.
+    pub lnum: u64,
     /// If the [`Marker`] is an opening marker (i.e. `{{#`) then this is true. Otherwise (i.e.
     /// closing marker i.e. `{{/`) it's set to false.
     pub is_opening: bool,
-    /// The line number of the marker when all the other markers are in the file.
-    pub lnum: u64,
     /// The hostname specified in the marker.
     pub hostname: String,
 }
@@ -75,17 +76,19 @@ impl std::convert::TryFrom<&str> for Marker {
 }
 
 /// Represents all the markers contained in a file.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct FileMarkerData {
     pub path: PathBuf,
-    pub markers: Vec<Marker>,
+    /// `markers` being a [`SortedVec`] ensures that it contains the markers in the file from top
+    /// to bottom.
+    pub markers: SortedVec<Marker>,
 }
 
 impl std::convert::From<PathBuf> for FileMarkerData {
     fn from(path: PathBuf) -> Self {
         Self {
             path,
-            markers: Vec::new(),
+            markers: SortedVec::new(),
         }
     }
 }
